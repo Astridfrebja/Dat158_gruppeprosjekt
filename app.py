@@ -4,10 +4,9 @@ import pandas as pd
 import numpy as np
 import os
 
-# --- Oppsett ---
 app = Flask(__name__)
 
-# --- 1. Last inn Modell ---
+#Last inn Modell
 MODEL_PATH = 'titanic_rf_model.pkl'
 
 try:
@@ -18,12 +17,12 @@ except Exception as e:
     print(f"Feil ved lasting av modell: {e}")
     model = None
     
-# --- Rute for Hjemmeside og Prediksjon ---
+#Rute for Hjemmeside og Prediksjon
 @app.route('/', methods=['GET', 'POST'])
 def predict_survival():
     prediction_result = None
     
-    # Standardverdier for input-feltene (brukes ved første lasting)
+    # Standardverdier for input-feltene
     user_inputs = {
         'pclass': '3',  # Lagres som streng for å matche HTML-form data
         'age': '30.0', 
@@ -36,8 +35,8 @@ def predict_survival():
 
     if request.method == 'POST' and model is not None:
         
-        # 1a. LAGRING AV RÅDATA: Henter alle inputs og lagrer dem i user_inputs
-        # Dette gjør at vi kan sende dem tilbake til HTML for å unngå nullstilling
+        # Henter alle inputs og lagrer dem i user_inputs
+        # Unngå nullstilling
         user_inputs['pclass'] = request.form.get('pclass', user_inputs['pclass'])
         user_inputs['age'] = request.form.get('age', user_inputs['age'])
         user_inputs['fare'] = request.form.get('fare', user_inputs['fare'])
@@ -47,7 +46,7 @@ def predict_survival():
         user_inputs['embarked'] = request.form.get('embarked', user_inputs['embarked'])
 
         try:
-            # 1b. VALIDERTE INPUTS: Konverterer strenger (fra user_inputs) til tall for modellen
+            # Konverterer strenger (fra user_inputs) til tall for modellen
             
             inputs_for_model = {}
             inputs_for_model['pclass'] = int(user_inputs['pclass'])
@@ -59,9 +58,6 @@ def predict_survival():
             sex = user_inputs['sex']
             embarked = user_inputs['embarked']
             
-            # --- 2. Dataforberedelse (MÅ MATCHE TRENTE FEATURES!) ---
-            
-            # **DEN FIKSEDE FEATURE_ORDER** (Basert på Colab utskriften: Age, SibSp, Parch, Fare, Sex_male, Embarked, Pclass)
             FEATURE_ORDER = ['Age', 'SibSp', 'Parch', 'Fare', 
                              'Sex_male', 'Embarked_Q', 'Embarked_S', 
                              'Pclass_2', 'Pclass_3']
@@ -80,10 +76,10 @@ def predict_survival():
                 'Pclass_3': [1 if inputs_for_model['pclass'] == 3 else 0]
             }
             
-            # VIKTIG: Lager DataFrame og tvinger kolonnene til å matche FEATURE_ORDER
+            # Lager DataFrame og tvinger kolonnene til å matche FEATURE_ORDER
             input_df = pd.DataFrame(data, columns=FEATURE_ORDER)
 
-            # --- 3. Prediksjon ---
+            # Prediksjon 
             prediction = model.predict(input_df)[0]
             
             # Konverterer 0/1 til lesbar tekst
@@ -97,7 +93,7 @@ def predict_survival():
         except Exception as e:
             prediction_result = f"En uventet feil oppstod under prediksjon. Detalj: {e}"
 
-    # Dette er den kritiske endringen: Sender 'user_inputs' til HTML-malen!
+    # Sender 'user_inputs' til HTML-malen!
     return render_template('index.html', prediction=prediction_result, inputs=user_inputs)
 
 if __name__ == '__main__':
